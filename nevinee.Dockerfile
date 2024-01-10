@@ -17,7 +17,7 @@ RUN ARCH=$(uname -m); \
     elif [[ ${ARCH} == "armv7l" ]]; \
     then ARCH=${ARMV7_NAME}; \
     fi && \
-    curl -L -o ${PWD}/qbittorrentee.zip https://github.com/c0re100/qBittorrent-Enhanced-Edition/releases/download/release-${QBEE_TAG}/${ARCH} && \
+    curl -L -o ${PWD}/qbittorrentee.zip https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition/releases/download/release-${QBEE_TAG}/${ARCH} && \
     unzip qbittorrentee.zip
 
 FROM alpine:3.19
