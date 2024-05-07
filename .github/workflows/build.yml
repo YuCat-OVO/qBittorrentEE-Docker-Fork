@@ -77,6 +77,9 @@ jobs:
         platform: ["linux/amd64", "linux/arm/v7", "linux/arm64/v8"]
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
       - name: Set Variable
         id: set_var
         run: |
@@ -112,9 +115,6 @@ jobs:
           ls -al
           ls -al root
           ls -al root2
-
-      - name: Checkout
-        uses: actions/checkout@master
 
       - name: Download meta bake definition
         uses: actions/download-artifact@v4
