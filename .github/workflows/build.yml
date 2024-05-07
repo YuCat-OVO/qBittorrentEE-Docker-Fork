@@ -147,7 +147,7 @@ jobs:
         id: bake
         uses: docker/bake-action@v4
         env:
-          TYPE: ${{ env.ARCH }}
+          TYPE: ${{ env.TYPE }}
         with:
           files: |
             ./docker-bake.hcl
