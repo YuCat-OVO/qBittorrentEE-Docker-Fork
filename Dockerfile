@@ -5,14 +5,13 @@ ARG FILE_NAME
 
 COPY root /default
 
-RUN apk --no-cache add bash wget curl unzip zip jq
+RUN apk --no-cache add curl unzip
 
 RUN \
     curl -L -o "/tmp/qbittorrentee.zip" "https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition/releases/download/release-${QBEE_TAG}/${FILE_NAME}" && \
-    unzip "/tmp/qbittorrentee.zip" && \
-    mkdir -p /default/usr/bin && \
-    mv /tmp/qbittorrent-nox /default/usr/bin &&\
-    chmod 755 /default/usr/bin/qbittorrent-nox
+    unzip "/tmp/qbittorrentee.zip" -d "/tmp" && \
+    mkdir -p "/default/usr/bin" && \
+    mv "/tmp/qbittorrent-nox" "/default/usr/bin/qbittorrent-nox"
 
 
 FROM alpine:20240329
