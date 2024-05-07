@@ -1,0 +1,64 @@
+FROM alpine:edge AS build
+
+ARG QBEE_TAG
+ARG FILE_NAME
+
+COPY root /default
+COPY root2 /default
+
+RUN apk --no-cache add bash wget curl unzip zip jq
+
+RUN \
+    curl -L -o "/tmp/qbittorrentee.zip" "https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition/releases/download/release-${QBEE_TAG}/${FILE_NAME}" && \
+    unzip "/tmp/qbittorrentee.zip" && \
+    mkdir -p /default/usr/bin && \
+    mv /tmp/qbittorrent-nox /default/usr/bin && \
+    chmod 755 /default/usr/bin/qbittorrent-nox && \
+    git clone --depth 1 https://github.com/ledccn/IYUUPlus.git /iyuu && \
+    printf "upload_max_filesize=100M\npost_max_size=108M\nmemory_limit=1024M\ndate.timezone=%s" "${TZ}" > /etc/php82/conf.d/99-overrides.ini && \
+    rm -rf /var/cache/apk/* /tmp/*
+
+
+FROM alpine:20240329
+
+COPY --from=build /default /
+
+ENV QBT_PROFILE=/home/qbittorrent \
+    TZ=Asia/Shanghai \
+    PUID=1000 \
+    PGID=100 \
+    WEBUI_PORT=8080 \
+    BT_PORT=34567 \
+    QB_USERNAME=admin \
+    QB_PASSWORD=adminadmin \
+    LANG=zh_CN.UTF-8 \
+    SHELL=/bin/bash \
+    PS1="\u@\h:\w \$ " \
+    IYUU_REPO_URL=https://gitee.com/ledc/iyuuplus.git
+
+RUN apk add --no-cache \
+    composer \
+    git \
+    libressl \
+    tar \
+    unzip \
+    zip \
+    php82 \
+    php82-curl \
+    php82-dom \
+    php82-json \
+    php82-mbstring \
+    php82-openssl \
+    php82-opcache \
+    php82-pdo \
+    php82-pdo_sqlite \
+    php82-phar \
+    php82-pcntl \
+    php82-posix \
+    php82-simplexml \
+    php82-sockets \
+    php82-session \
+    php82-zip \
+    php82-zlib \
+    php82-xml
+VOLUME ["/iyuu"]

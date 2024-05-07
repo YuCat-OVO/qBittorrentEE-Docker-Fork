@@ -1,5 +1,9 @@
 name: Build & Release
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
@@ -7,82 +11,105 @@ on:
       - master
     paths:
       - info.json
+
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  DOCKERHUB_SLUG: docker.io/yucatovo/qbittorrentee
+  GHCR_SLUG: ghcr.io/yucat-ovo/qbittorrentee
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  # release:
-  #   runs-on: ubuntu-latest
-  #   name: Release
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-
-  #     - name: Set Version
-  #       id: set-version
-  #       run: |
-  #         VERSION_GET=$(jq -r '.[0].build' info.json)
-
-  #         QBEE_TAG=$(jq -r ".[${VERSION_GET}].qbittorrent_enhanced_edition_version" info.json | sed 's/v//')
-  #         QB_TAG=$(jq -r ".[${VERSION_GET}].qbittorrent_version" info.json | sed 's/v//')
-
-  #         echo "QB_TAG=${QB_TAG}" >> $GITHUB_OUTPUT
-  #         echo "QBEE_TAG=${QBEE_TAG}" >> $GITHUB_OUTPUT
-
-  #         curl -L \
-  #           -o qbittorrent_enhanced_qt6_x64_setup.exe \
-  #           https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition/releases/download/release-${QBEE_TAG}/qbittorrent_enhanced_${QBEE_TAG}_qt6_x64_setup.exe
-  #         curl -L \
-  #           -o qbittorrent_enhanced_x64_setup.exe \
-  #           https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition/releases/download/release-${QBEE_TAG}/qbittorrent_enhanced_${QBEE_TAG}_x64_setup.exe
-  #         curl -L \
-  #           -o qbittorrent_enhanced_setup.exe \
-  #           https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition/releases/download/release-${QBEE_TAG}/qbittorrent_enhanced_${QBEE_TAG}_setup.exe
-
-  #     - name: Generate Release
-  #       uses: softprops/action-gh-release@v1
-  #       with:
-  #         tag_name: ${{ steps.set-version.outputs.QB_TAG }}-${{ steps.set-version.outputs.QBEE_TAG }}
-  #         name: ${{ steps.set-version.outputs.QB_TAG }}-${{ steps.set-version.outputs.QBEE_TAG }}
-  #         body: qBittorrent-Enhanced-Edition v${{ steps.set-version.outputs.QBEE_TAG }}
-  #         draft: false
-  #         prerelease: false
-  #         files: |
-  #           qbittorrent_enhanced_qt6_x64_setup.exe
-  #           qbittorrent_enhanced_x64_setup.exe
-  #           qbittorrent_enhanced_setup.exe
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build1:
-    name: none
-    # needs: [release]
+  prepare:
+    name: prepare
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        type: ["normal", "iyuu"]
+
     steps:
       - name: Checkout
         uses: actions/checkout@master
 
-      - name: Set Version
-        id: set-version
+      - name: Prepare
         run: |
+          if [ ${{ matrix.type }} == "iyuu" ]; then
+            echo "SUFFIX=-iyuu" >> "$GITHUB_ENV"
+          fi
+
+      - name: Docker Meta
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: |
+            ${{ env.DOCKERHUB_SLUG }}
+            ${{ env.GHCR_SLUG }}
+          tags: |
+            type=ref,event=branch,suffix=${{ env.SUFFIX }},enable=${{ github.ref_name != github.event.repository.default_branch }}
+            type=edge,suffix=${{ env.SUFFIX }},branch=develop
+            type=raw,value=latest,suffix=${{ env.SUFFIX }},enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=sha,suffix=${{ env.SUFFIX }}
+          labels: |
+            org.opencontainers.image.title=qBittorrent-Enhanced-Edition-Docker
+            org.opencontainers.image.description=A qBittorrent Enhanced Edition Docker image.
+            org.opencontainers.image.vendor=YuCat-OVO
+
+      - name: Rename meta bake definition file
+        run: |
+          mv "${{ steps.meta.outputs.bake-file }}" "/tmp/bake-meta.json"
+
+      - name: Upload meta bake definition
+        uses: actions/upload-artifact@v4
+        with:
+          name: bake-meta${{ env.SUFFIX }}
+          path: /tmp/bake-meta${{ env.SUFFIX }}.json
+          if-no-files-found: error
+          retention-days: 1
+
+  build:
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        type: ["normal", "iyuu"]
+        platform: ["linux/amd64", "linux/arm/v7", "linux/arm64/v8"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Set Variable
+        id: set_var
+        run: |
+          if [ ${{ matrix.type }} == "iyuu" ]; then
+            echo "SUFFIX=-iyuu" >> "$GITHUB_ENV"
+            echo "TYPE=iyuu"  >> "$GITHUB_ENV"
+          fi
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
+          echo "ARCH=${platform//linux\//}" >> "$GITHUB_ENV"
+
           VERSION_GET=$(jq -r '.[0].build' info.json)
 
           QBEE_TAG=$(jq -r ".[${VERSION_GET}].qbittorrent_enhanced_edition_version" info.json | sed 's/v//')
           QB_TAG=$(jq -r ".[${VERSION_GET}].qbittorrent_version" info.json | sed 's/v//')
-          AMD64_NAME=$(jq -r ".[${VERSION_GET}].arch.amd64.file_name" info.json)
-          ARM64V8_NAME=$(jq -r ".[${VERSION_GET}].arch.arm64v8.file_name" info.json)
-          ARMV7_NAME=$(jq -r ".[${VERSION_GET}].arch.armv7.file_name" info.json)
+
+          ARCH=${platform//linux\//}
+          if [ "${ARCH}" = "arm64" ]; then
+              FILE_NAME=$(jq -r ".[${VERSION_GET}].arch.amd64.file_name" info.json)
+          elif [ "${ARCH}" = "arm/v7" ]; then
+              FILE_NAME=$(jq -r ".[${VERSION_GET}].arch.arm64v8.file_name" info.json)
+          elif [ "${ARCH}" = "arm64/v8" ]; then
+              FILE_NAME=$(jq -r ".[${VERSION_GET}].arch.armv7.file_name" info.json)
+          fi
 
           echo "QB_TAG=${QB_TAG}" >> $GITHUB_OUTPUT
           echo "QBEE_TAG=${QBEE_TAG}" >> $GITHUB_OUTPUT
-          echo "AMD64_NAME=${AMD64_NAME}" >> $GITHUB_OUTPUT
-          echo "ARM64V8_NAME=${ARM64V8_NAME}" >> $GITHUB_OUTPUT
-          echo "ARMV7_NAME=${ARMV7_NAME}" >> $GITHUB_OUTPUT
+          echo "FILE_NAME=${FILE_NAME}" >> $GITHUB_OUTPUT
 
           git clone -b master https://github.com/devome/dockerfiles.git files
           cp -r files/qbittorrent/root root
@@ -91,83 +118,88 @@ jobs:
           ls -al root
           ls -al root2
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # images: ${{ secrets.DOCKER_USERNAME }}/qbittorrentee
-          tags: |
-            type=raw,value=${{ steps.set-version.outputs.QB_TAG }}
-            type=raw,value=latest
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: "--debug"
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          # username: ${{ secrets.DOCKER_USERNAME }}
-          # password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Buildx
-        uses: docker/build-push-action@v5
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          context: .
-          file: nevinee.Dockerfile
-          platforms: |
-            linux/amd64
-            linux/arm/v7
-            linux/arm64/v8
-          push: true
-          build-args: |
-            QBEE_TAG=${{ steps.set-version.outputs.QBEE_TAG }}
-            AMD64_NAME=${{ steps.set-version.outputs.AMD64_NAME }}
-            ARM64V8_NAME=${{ steps.set-version.outputs.ARM64V8_NAME }}
-            ARMV7_NAME=${{ steps.set-version.outputs.ARMV7_NAME }}
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ steps.meta.outputs.tags }}
+          registry: ghcr.io
+          username: ${{ github.repository_owner  }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-  build2:
-    name: iyuu
-    needs: [build1]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@master
+      - name: Build
+        id: bake
+        uses: docker/bake-action@v4
+        env:
+          TYPE: ${{ env.ARCH }}
+        with:
+          files: |
+            ./docker-bake.hcl
+            /tmp/bake-meta${{ env.SUFFIX }}.json
+          targets: image
+          set: |
+            *.args.QBEE_TAG=${{ env.QBEE_TAG }}
+            *.args.FILE_NAME=${{ env.FILE_NAME }}
+            *.tags=
+            *.platform=${{ matrix.platform }}
+            *.cache-from=type=gha,scope=build-${{ env.PLATFORM_PAIR }}
+            *.cache-to=type=gha,scope=build-${{ env.PLATFORM_PAIR }}
+            *.output=type=image,"name=${{ env.DOCKERHUB_SLUG }},${{ env.GHCR_SLUG }}",push-by-digest=true,name-canonical=true,push=true
 
-      - name: Set Version
-        id: set-version
+      - name: Export digest
         run: |
-          VERSION_GET=$(jq -r '.[0].build' info.json)
-          QB_TAG=$(jq -r ".[${VERSION_GET}].qbittorrent_version" info.json | sed 's/v//')
-          echo "QB_TAG=${QB_TAG}" >> $GITHUB_OUTPUT
+          mkdir -p /tmp/digests${{ env.SUFFIX }}
+          digest="${{ fromJSON(steps.bake.outputs.metadata).image['containerimage.digest'] }}"
+          touch "/tmp/digests${{ env.SUFFIX }}/${digest#sha256:}"
 
-          git clone -b master https://github.com/devome/dockerfiles.git files
-          cp -r files/qbittorrent/root root
-          cp -r files/qbittorrent/root2 root2
-          ls -al
-          ls -al root
-          ls -al root2
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # images: ${{ secrets.DOCKER_USERNAME }}/qbittorrentee
-          tags: |
-            type=raw,value=${{ steps.set-version.outputs.QB_TAG }}-iyuu
-            type=raw,value=latest-iyuu
+          name: digests-${{ env.PLATFORM_PAIR }}${{ env.SUFFIX }}
+          path: /tmp/digests${{ env.SUFFIX }}/*
+          if-no-files-found: error
+          retention-days: 1
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    strategy:
+      fail-fast: false
+      matrix:
+        type: ["normal", "iyuu"]
+
+    steps:
+      - name: Prepare
+        run: |
+          if [ ${{ matrix.type }} == "iyuu" ]; then
+            echo "SUFFIX=-iyuu" >> "$GITHUB_ENV"
+          fi
+
+      - name: Download meta bake definition
+        uses: actions/download-artifact@v4
+        with:
+          name: bake-meta${{ env.SUFFIX }}
+          path: /tmp
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests${{ env.SUFFIX }}
+          pattern: digests-*${{ env.SUFFIX }}
+          merge-multiple: true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -175,23 +207,26 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          # username: ${{ secrets.DOCKER_USERNAME }}
-          # password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Buildx
-        uses: docker/build-push-action@v5
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          context: .
-          file: nevinee.iyuu.Dockerfile
-          platforms: |
-            linux/amd64
-            linux/arm/v7
-            linux/arm64/v8
-          push: true
-          build-args: |
-            QB_TAG=${{ steps.set-version.outputs.QB_TAG }}
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ steps.meta.outputs.tags }}
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create manifest list and push
+        working-directory: /tmp/digests${{ env.SUFFIX }}
+        run: |
+          docker buildx imagetools create $(jq -cr '.target."docker-metadata-action".tags | map(select(startswith("${{ env.DOCKERHUB_SLUG }}")) | "-t " + .) | join(" ")' /tmp/bake-meta${{ env.SUFFIX }}.json) \
+            $(printf '${{ env.DOCKERHUB_SLUG }}@sha256:%s ' *)
+          docker buildx imagetools create $(jq -cr '.target."docker-metadata-action".tags | map(select(startswith("${{ env.GHCR_SLUG }}")) | "-t " + .) | join(" ")' /tmp/bake-meta${{ env.SUFFIX }}.json) \
+            $(printf '${{ env.GHCR_SLUG }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          tag=$(jq -r '.target."docker-metadata-action".args.DOCKER_META_VERSION' /tmp/bake-meta${{ env.SUFFIX }}.json)
+          docker buildx imagetools inspect ${{ env.DOCKERHUB_SLUG }}:${tag}
+          docker buildx imagetools inspect ${{ env.GHCR_SLUG }}:${tag}
