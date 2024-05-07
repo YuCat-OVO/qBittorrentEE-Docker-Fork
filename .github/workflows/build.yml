@@ -97,17 +97,17 @@ jobs:
           QB_TAG=$(jq -r ".[${VERSION_GET}].qbittorrent_version" info.json | sed 's/v//')
 
           ARCH=${platform//linux\//}
-          if [ "${ARCH}" = "arm64" ]; then
+          if [ "${ARCH}" == "arm64" ]; then
               FILE_NAME=$(jq -r ".[${VERSION_GET}].arch.amd64.file_name" info.json)
-          elif [ "${ARCH}" = "arm/v7" ]; then
+          elif [ "${ARCH}" == "arm/v7" ]; then
               FILE_NAME=$(jq -r ".[${VERSION_GET}].arch.arm64v8.file_name" info.json)
-          elif [ "${ARCH}" = "arm64/v8" ]; then
+          elif [ "${ARCH}" == "arm64/v8" ]; then
               FILE_NAME=$(jq -r ".[${VERSION_GET}].arch.armv7.file_name" info.json)
           fi
 
-          echo "QB_TAG=${QB_TAG}" >> $GITHUB_OUTPUT
-          echo "QBEE_TAG=${QBEE_TAG}" >> $GITHUB_OUTPUT
-          echo "FILE_NAME=${FILE_NAME}" >> $GITHUB_OUTPUT
+          echo "QB_TAG=${QB_TAG}" >> "$GITHUB_ENV"
+          echo "QBEE_TAG=${QBEE_TAG}" >> "$GITHUB_ENV"
+          echo "FILE_NAME=${FILE_NAME}" >> "$GITHUB_ENV"
 
           git clone -b master https://github.com/devome/dockerfiles.git files
           cp -r files/qbittorrent/root root
