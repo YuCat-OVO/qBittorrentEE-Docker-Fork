@@ -35,6 +35,8 @@ jobs:
         run: |
           if [ ${{ matrix.type }} == "iyuu" ]; then
             echo "SUFFIX=-iyuu" >> "$GITHUB_ENV"
+          else
+            echo "NORMAL=-normal" >> "$GITHUB_ENV"
           fi
 
       - name: Docker Meta
@@ -47,7 +49,7 @@ jobs:
           tags: |
             type=ref,event=branch,suffix=${{ env.SUFFIX }},enable=${{ github.ref_name != github.event.repository.default_branch }}
             type=edge,suffix=${{ env.SUFFIX }},branch=develop
-            type=raw,value=latest,suffix=${{ env.SUFFIX }},enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,value=latest,suffix=${{ env.SUFFIX }},enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
             type=sha,suffix=${{ env.SUFFIX }}
           labels: |
             org.opencontainers.image.title=qBittorrent-Enhanced-Edition-Docker
@@ -61,8 +63,8 @@ jobs:
       - name: Upload meta bake definition
         uses: actions/upload-artifact@v4
         with:
-          name: bake-meta${{ env.SUFFIX }}
-          path: /tmp/bake-meta${{ env.SUFFIX }}.json
+          name: bake-meta${{ env.SUFFIX }}${{ env.NORMAL }}
+          path: /tmp/bake-meta${{ env.SUFFIX }}${{ env.NORMAL }}.json
           if-no-files-found: error
           retention-days: 1
 
@@ -85,8 +87,10 @@ jobs:
         run: |
           if [ ${{ matrix.type }} == "iyuu" ]; then
             echo "SUFFIX=-iyuu" >> "$GITHUB_ENV"
-            echo "TYPE=iyuu"  >> "$GITHUB_ENV"
+          else
+            echo "NORMAL=-normal" >> "$GITHUB_ENV"
           fi
+
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
           echo "ARCH=${platform//linux\//}" >> "$GITHUB_ENV"
@@ -119,7 +123,7 @@ jobs:
       - name: Download meta bake definition
         uses: actions/download-artifact@v4
         with:
-          name: bake-meta${{ env.SUFFIX }}
+          name: bake-meta${{ env.SUFFIX }}${{ env.NORMAL }}
           path: /tmp
 
       - name: Set up QEMU
@@ -151,7 +155,7 @@ jobs:
         with:
           files: |
             ./docker-bake.hcl
-            /tmp/bake-meta${{ env.SUFFIX }}.json
+            /tmp/bake-meta${{ env.SUFFIX }}${{ env.NORMAL }}.json
           targets: image
           set: |
             *.args.QBEE_TAG=${{ env.QBEE_TAG }}
@@ -164,15 +168,15 @@ jobs:
 
       - name: Export digest
         run: |
-          mkdir -p /tmp/digests${{ env.SUFFIX }}
+          mkdir -p /tmp/digests${{ env.SUFFIX }}${{ env.NORMAL }}
           digest="${{ fromJSON(steps.bake.outputs.metadata).image['containerimage.digest'] }}"
-          touch "/tmp/digests${{ env.SUFFIX }}/${digest#sha256:}"
+          touch "/tmp/digests${{ env.SUFFIX }}${{ env.NORMAL }}/${digest#sha256:}"
 
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}${{ env.SUFFIX }}
-          path: /tmp/digests${{ env.SUFFIX }}/*
+          name: digests-${{ env.PLATFORM_PAIR }}${{ env.SUFFIX }}${{ env.NORMAL }}
+          path: /tmp/digests${{ env.SUFFIX }}${{ env.NORMAL }}/*
           if-no-files-found: error
           retention-days: 1
 
@@ -190,19 +194,21 @@ jobs:
         run: |
           if [ ${{ matrix.type }} == "iyuu" ]; then
             echo "SUFFIX=-iyuu" >> "$GITHUB_ENV"
+          else
+            echo "NORMAL=-normal" >> "$GITHUB_ENV"
           fi
 
       - name: Download meta bake definition
         uses: actions/download-artifact@v4
         with:
-          name: bake-meta${{ env.SUFFIX }}
+          name: bake-meta${{ env.SUFFIX }}${{ env.NORMAL }}
           path: /tmp
 
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
-          path: /tmp/digests${{ env.SUFFIX }}
-          pattern: digests-*${{ env.SUFFIX }}
+          path: /tmp/digests${{ env.SUFFIX }}${{ env.NORMAL }}
+          pattern: digests-*${{ env.SUFFIX }}${{ env.NORMAL }}
           merge-multiple: true
 
       - name: Set up Docker Buildx
@@ -222,15 +228,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create manifest list and push
-        working-directory: /tmp/digests${{ env.SUFFIX }}
+        working-directory: /tmp/digests${{ env.SUFFIX }}${{ env.NORMAL }}
         run: |
-          docker buildx imagetools create $(jq -cr '.target."docker-metadata-action".tags | map(select(startswith("${{ env.DOCKERHUB_SLUG }}")) | "-t " + .) | join(" ")' /tmp/bake-meta${{ env.SUFFIX }}.json) \
+          docker buildx imagetools create $(jq -cr '.target."docker-metadata-action".tags | map(select(startswith("${{ env.DOCKERHUB_SLUG }}")) | "-t " + .) | join(" ")' /tmp/bake-meta${{ env.SUFFIX }}${{ env.NORMAL }}.json) \
             $(printf '${{ env.DOCKERHUB_SLUG }}@sha256:%s ' *)
-          docker buildx imagetools create $(jq -cr '.target."docker-metadata-action".tags | map(select(startswith("${{ env.GHCR_SLUG }}")) | "-t " + .) | join(" ")' /tmp/bake-meta${{ env.SUFFIX }}.json) \
+          docker buildx imagetools create $(jq -cr '.target."docker-metadata-action".tags | map(select(startswith("${{ env.GHCR_SLUG }}")) | "-t " + .) | join(" ")' /tmp/bake-meta${{ env.SUFFIX }}${{ env.NORMAL }}.json) \
             $(printf '${{ env.GHCR_SLUG }}@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          tag=$(jq -r '.target."docker-metadata-action".args.DOCKER_META_VERSION' /tmp/bake-meta${{ env.SUFFIX }}.json)
+          tag=$(jq -r '.target."docker-metadata-action".args.DOCKER_META_VERSION' /tmp/bake-meta${{ env.SUFFIX }}${{ env.NORMAL }}.json)
           docker buildx imagetools inspect ${{ env.DOCKERHUB_SLUG }}:${tag}
           docker buildx imagetools inspect ${{ env.GHCR_SLUG }}:${tag}
