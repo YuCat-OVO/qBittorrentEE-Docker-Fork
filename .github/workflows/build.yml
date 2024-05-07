@@ -8,9 +8,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
-    paths:
-      - info.json
+      - develop
 
 env:
   DOCKERHUB_SLUG: docker.io/yucatovo/qbittorrentee
@@ -58,7 +56,7 @@ jobs:
 
       - name: Rename meta bake definition file
         run: |
-          mv "${{ steps.meta.outputs.bake-file }}" "/tmp/bake-meta.json"
+          mv "${{ steps.meta.outputs.bake-file }}" "/tmp/bake-meta${{ env.SUFFIX }}.json"
 
       - name: Upload meta bake definition
         uses: actions/upload-artifact@v4
