@@ -97,7 +97,7 @@ jobs:
           QB_TAG=$(jq -r ".[${VERSION_GET}].qbittorrent_version" info.json | sed 's/v//')
 
           ARCH=${platform//linux\//}
-          if [ "${ARCH}" == "arm64" ]; then
+          if [ "${ARCH}" == "amd64" ]; then
               FILE_NAME=$(jq -r ".[${VERSION_GET}].arch.amd64.file_name" info.json)
           elif [ "${ARCH}" == "arm/v7" ]; then
               FILE_NAME=$(jq -r ".[${VERSION_GET}].arch.arm64v8.file_name" info.json)
