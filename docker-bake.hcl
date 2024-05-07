@@ -6,6 +6,8 @@ variable "TYPE" {
   default = "normal"
 }
 
+IMAGE_TYPE = equal("", TYPE) ? "normal" : "${TYPE}"
+
 target "docker-metadata-action" {
   tags = ["${DEFAULT_TAG}"]
 }
@@ -16,7 +18,7 @@ group "default" {
 
 target "image" {
   inherits   = ["docker-metadata-action"]
-  dockerfile = format("Dockerfile%s", equal("normal", TYPE) ? "" : ".${TYPE}")
+  dockerfile = format("Dockerfile%s", equal("normal", IMAGE_TYPE) ? "" : ".${IMAGE_TYPE}")
 }
 
 target "image-local" {

@@ -119,7 +119,7 @@ jobs:
       - name: Download meta bake definition
         uses: actions/download-artifact@v4
         with:
-          name: bake-meta
+          name: bake-meta${{ env.SUFFIX }}
           path: /tmp
 
       - name: Set up QEMU
