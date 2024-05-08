@@ -1,6 +1,6 @@
 # qBittorrent-Enhanced-Edition-Docker
 
-<div style="color: red; background-color: yellow; font-size: 2em">本镜像为自用镜像，内置客户端为修改过后的qBittorrent(EE)，非官方qBittorrent，使用者请自行承担风险！本人不会对使用此镜像造成的任何损失负责</div></br>
+<img src="https://raw.githubusercontent.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/main/docs/important.png" style="width: 100%">
 
 [![Build & Release](https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/actions/workflows/build.yml/badge.svg)](https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/actions/workflows/build.yml) [![Docker Docs](https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/actions/workflows/docker_docs.yml/badge.svg)](https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/actions/workflows/docker_docs.yml)
 
