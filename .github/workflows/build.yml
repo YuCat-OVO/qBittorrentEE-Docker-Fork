@@ -8,7 +8,11 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - develop
+      - "master"
+      - "develop"
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
 
 env:
   DOCKERHUB_SLUG: docker.io/yucatovo/qbittorrentee

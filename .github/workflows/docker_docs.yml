@@ -1,12 +1,15 @@
 name: Docker Docs
 
 on:
-    workflow_dispatch:
-    push:
-      branches:
-        - master
-      paths:
-        - README.md
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - README.md
+
+env:
+  IMAGE_NAME: qbittorrentee
 
 jobs:
   job:
@@ -22,12 +25,16 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      -
-        name: Docker Hub Description
+      - name: Get Description
+        run: |
+          description=$(curl "https://api.github.com/repos/${{ github.repository }}" | jq -r ".description")
+          echo "DESCRIPTION=${description}" >> "$GITHUB_ENV"
+
+      - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: ${{ secrets.DOCKER_USERNAME }}/qbittorrentee
-          short-description: 由 nevinee 大佬的 qBittorrent 镜像改编的 qBittorrent Enhanced Edition 镜像
+          repository: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          short-description: ${{ env.DESCRIPTION }}
           readme-filepath: ./README.md
