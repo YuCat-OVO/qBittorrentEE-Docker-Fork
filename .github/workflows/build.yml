@@ -16,8 +16,8 @@ on:
       - "**.md"
 
 env:
-  DOCKERHUB_SLUG: docker.io/yucatovo/qbittorrentee
-  GHCR_SLUG: ghcr.io/yucat-ovo/qbittorrentee
+  DOCKERHUB_SLUG: docker.io/yucatovo/qbittorrentee-fork
+  GHCR_SLUG: ghcr.io/yucat-ovo/qbittorrentee-fork
 
 permissions:
   contents: read

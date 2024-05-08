@@ -1,8 +1,8 @@
 # qBittorrent-Enhanced-Edition-Docker
 
-<img src="https://raw.githubusercontent.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/main/docs/important.png" style="width: 100%">
+<img src="https://raw.githubusercontent.com/YuCat-OVO/qBittorrentEE-Docker-Fork/main/docs/important.png" style="width: 100%">
 
-[![Build & Release](https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/actions/workflows/build.yml/badge.svg)](https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/actions/workflows/build.yml) [![Docker Docs](https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/actions/workflows/docker_docs.yml/badge.svg)](https://github.com/YuCat-OVO/qBittorrent-Enhanced-Edition-Docker/actions/workflows/docker_docs.yml)
+[![Build & Release](https://github.com/YuCat-OVO/qBittorrentEE-Docker-Fork/actions/workflows/build.yml/badge.svg)](https://github.com/YuCat-OVO/qBittorrentEE-Docker-Fork/actions/workflows/build.yml) [![Docker Docs](https://github.com/YuCat-OVO/qBittorrentEE-Docker-Fork/actions/workflows/docker_docs.yml/badge.svg)](https://github.com/YuCat-OVO/qBittorrentEE-Docker-Fork/actions/workflows/docker_docs.yml)
 
 由 [nevinee 大佬的 qBittorrent 镜像](https://evine.win/p/docker-install-qbittorrent/)改编的 qBittorrent Enhanced Edition 镜像，使用方法参考原镜像。
 

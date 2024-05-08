@@ -9,7 +9,7 @@ on:
       - "README.md"
 
 env:
-  IMAGE_NAME: qbittorrentee
+  IMAGE_NAME: qbittorrentee-fork
 
 jobs:
   job:
