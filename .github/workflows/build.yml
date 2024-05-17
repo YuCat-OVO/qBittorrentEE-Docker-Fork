@@ -54,7 +54,7 @@ jobs:
           tags: |
             type=ref,event=branch,suffix=${{ env.SUFFIX }},enable=${{ github.ref_name != github.event.repository.default_branch }}
             type=edge,suffix=${{ env.SUFFIX }},branch=develop
-            type=raw,value=latest,suffix=${{ env.SUFFIX }},enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
+            type=raw,value=latest,suffix=${{ env.SUFFIX }},enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
             type=sha,suffix=${{ env.SUFFIX }}
           labels: |
             org.opencontainers.image.title=qBittorrent-Enhanced-Edition-Docker
