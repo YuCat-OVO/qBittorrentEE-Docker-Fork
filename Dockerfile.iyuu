@@ -15,7 +15,7 @@ RUN \
     mv "/tmp/qbittorrent-nox" "/default/usr/bin/qbittorrent-nox" && \
     git clone --depth 1 https://github.com/ledccn/IYUUPlus.git /iyuu
 
-FROM alpine:20240329
+FROM alpine:20240606
 
 COPY --from=build /default /
 

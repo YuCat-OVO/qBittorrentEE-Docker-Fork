@@ -14,7 +14,7 @@ RUN \
     mv "/tmp/qbittorrent-nox" "/default/usr/bin/qbittorrent-nox"
 
 
-FROM alpine:20240329
+FROM alpine:20240606
 
 COPY --from=build /default /
 
